@@ -1,4 +1,4 @@
-import os
+mport os
 from collections import deque
 
 import numpy as np
@@ -35,9 +35,17 @@ class AntEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.prev_body_xyz, self.prev_body_rpy = self.delayed_meas[0]
 
         # compute torques
-        joint_positions = self.sim.data.qpos.flat[-8:]
-        joint_velocities = self.sim.data.qvel.flat[-8:]
 
+        #Mucoco_py bindings implementation:
+        
+        # joint_positions = self.sim.data.qpos.flat[-8:]
+        # joint_velocities = self.sim.data.qvel.flat[-8:]
+
+        # Mujoco bindings use Mjdata and Mjmodel whereas Mujoco_pu bindings use Mjsim method 
+        # which gives a sim objects and represents a running simulation including its state
+        # Mjsim internally wraps a PyMjModel and a PyMjData
+        joint_positions = self.data.qpos.flat[-8:]
+        joint_velocities = self.data.qvel.flat[-8:]
         #
         # motor control using a PID controller
         #
@@ -86,10 +94,14 @@ class AntEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         return ob, reward, done, {}
 
     def _get_obs(self):
-        body_xyz = np.copy(self.sim.data.qpos.flat[:3])
-        body_quat = np.copy(self.sim.data.qpos.flat[3:7])
-        body_rpy = R.from_quat(body_quat).as_euler('xyz')
+        # body_xyz = np.copy(self.sim.data.qpos.flat[:3])
+        # body_quat = np.copy(self.sim.data.qpos.flat[3:7])
+        # body_rpy = R.from_quat(body_quat).as_euler('xyz')
 
+        # Migration from mujoco_py to mujoco bindings
+        body_xyz = np.copy(self.data.qpos.flat[:3])
+        body_quat = np.copy(self.data.qpos.flat[3:7])
+        body_rpy = R.from_quat(body_quat).as_euler('xyz')
         # add noise
         body_xyz += np.random.randn(3) * self.xyz_noise_std
         body_rpy += np.random.randn(3) * self.rpy_noise_std
@@ -98,8 +110,11 @@ class AntEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         body_xyz, body_rpy = self.delayed_meas[0]
 
-        joint_positions = self.sim.data.qpos.flat[-8:]
-        joint_positions_vel = self.sim.data.qvel.flat[-8:]
+        # joint_positions = self.sim.data.qpos.flat[-8:]
+        # joint_positions_vel = self.sim.data.qvel.flat[-8:]
+        # Migration from mujoco_py to mujoco bindings
+        joint_positions = self.data.qpos.flat[-8:]
+        joint_positions_vel = self.data.qvel.flat[-8:]
 
         body_xyz_vel = body_xyz - self.prev_body_xyz
         body_rpy_vel = body_rpy - self.prev_body_rpy
@@ -127,11 +142,18 @@ class AntEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         qvel = self.init_qvel #+ self.np_random.randn(self.model.nv) * .1
         self.set_state(qpos, qvel)
 
-        self.prev_body_xyz = np.copy(self.sim.data.qpos.flat[:3])
-        self.prev_body_rpy = R.from_quat(np.copy(self.sim.data.qpos.flat[3:7])).as_euler('xyz')
+        # self.prev_body_xyz = np.copy(self.sim.data.qpos.flat[:3])
+        # self.prev_body_rpy = R.from_quat(np.copy(self.sim.data.qpos.flat[3:7])).as_euler('xyz')
+        # Migration from mujoco_py to mujoco bindings
+        self.prev_body_xyz = np.copy(self.data.qpos.flat[:3])
+        self.prev_body_rpy = R.from_quat(np.copy(self.data.qpos.flat[3:7])).as_euler('xyz')
 
-        body_xyz = np.copy(self.sim.data.qpos.flat[:3])
-        body_quat = np.copy(self.sim.data.qpos.flat[3:7])
+        # body_xyz = np.copy(self.sim.data.qpos.flat[:3])
+        # body_quat = np.copy(self.sim.data.qpos.flat[3:7])
+        # body_rpy = R.from_quat(body_quat).as_euler('xyz')
+        # Migration from mujoco_py to mujoco bindings
+        body_xyz = np.copy(self.data.qpos.flat[:3])
+        body_quat = np.copy(self.data.qpos.flat[3:7])
         body_rpy = R.from_quat(body_quat).as_euler('xyz')
 
         self.delayed_meas = deque([(body_xyz, body_rpy)]*(self.n_delay_steps+1), maxlen=(self.n_delay_steps+1))
