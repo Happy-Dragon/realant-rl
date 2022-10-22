@@ -13,6 +13,7 @@ from redq import REDQ
 
 def rollout(agent, env, train=False, random=False):
     state = env.reset()
+    # env.render()
     episode_step, episode_return = 0, 0
     done = False
     while not done:
@@ -20,7 +21,9 @@ def rollout(agent, env, train=False, random=False):
             action = env.action_space.sample()
         else:
             action = agent.act(state, train=train)
-
+            
+        env.render()
+        
         next_state, reward, done, info = env.step(action)
         episode_return += reward
 
@@ -82,6 +85,8 @@ if __name__ == '__main__':
         env = gym.make('RealAntBullet-v0', task=args.task)
     else:
         raise Exception('Unknown env')
+    
+    # env.render()
 
     obs_size, act_size = env.observation_space.shape[0], env.action_space.shape[0]
 
